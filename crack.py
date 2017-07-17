@@ -67,13 +67,6 @@ def string_to_array(string):
 def array_to_string(array):
     return "".join([alphabet_r[num] for num in array])
 
-def decrypt(K,C,offset):
-    kl = len(K)
-    M = list(C)
-    for i in range(0,len(C)):
-        M[i] = (C[i]-K[(i+offset)%kl])%26
-    return M
-
 def get_offsets(words):
     offsets = []
     counter = 0
@@ -99,7 +92,7 @@ def sort_by_len(pairs):
 
 d = enchant.Dict("en_US")
 def crack_cipher(key_len,cipher):
-    key = [0]*key_len
+    key = Vigenere_Key(key_len)
     c_words = cipher.split()
     c_words = [string_to_array(word) for word in c_words]
     offsets = get_offsets(c_words)
@@ -109,14 +102,13 @@ def crack_cipher(key_len,cipher):
     word_off_pairs = sort_by_len(word_off_pairs)
     print(word_off_pairs)
     print("")
-    while key:
-        sys.stdout.write("\r"+str(key))
+    while not key.overflowed:
         all_are_words = True
         for i in range(0,len(word_off_pairs)):
             word = word_off_pairs[i][1]
             offset = word_off_pairs[i][0]
             index = 0
-            result = decrypt(key,word,offset)
+            result = key.decrypt(word,offset=offset)
             message = array_to_string(result)
             if not d.check(message):
                 all_are_words = False
@@ -127,18 +119,43 @@ def crack_cipher(key_len,cipher):
         key = increment_key(key)
     print("\r")
 
-class Key():
+class Vigenere_Key():
+    #TODO: this class could be adjusted to work for arbitrary alphabet size. but for now, let's hardcode 26 (a-z)
     def __init__(self,length):
+        self.length = length
         self._key = [0]*length
+        self.overflowed = 0
 
     #lexographic increment
     def increment(self):
-        index = len(self._key) - 1
+        index = self.length - 1
         key[index] += 1
-        while(key[index] > 25):
-            key[index] = 0
+        while(self._key[index] > 25):
+            self._key[index] = 0
             index -= 1
+            if index < 0:
+                index = self.length - 1
+                self.overflowed += 1
             self._key[index] += 1
+
+    def decrypt(self,C,offset=0):
+        kl = len(self._key)
+        M = list(C)
+        for i in range(0,len(C)):
+            M[i] = (C[i]-K[(i+offset)%kl])%26
+        return M
+
+    def encrypt(self,M,offset=0):
+        kl = len(self._key)
+        C = list(M)
+        for i in range(0,len(M)):
+            C[i] = (M[i]+K[(i+offset)%kl])%26
+        return C
+
+    def string(self):
+        return "".join([alphabet_r[num] for num in self._key])
+
+
 
 C = "ccoheal ieu w qwu tcb"
 key_len = 8
@@ -152,7 +169,7 @@ c_words = [string_to_array(word) for word in c_words]
 offsets = get_offsets(c_words)
 message = ""
 for i in range(0,len(c_words)):
-    temp = decrypt(key,c_words[i],offsets[i])
+    temp = key.decrypt(c_words[i],offsets[i])
     message += array_to_string(temp)+" "
 message = message.strip()
 print("key: "+array_to_string(key))
