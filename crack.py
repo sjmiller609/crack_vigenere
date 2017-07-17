@@ -1,6 +1,7 @@
 import enchant
 import sys
 import requests
+import re
 from cryptolib.crypto import Vigenere_Key, Vigenere_Cipher, Vigenere_Message
 
 alphabet = {\
@@ -110,9 +111,17 @@ def crack_cipher(key_len,cipher,key=None):
     return None
 
 def main():
-    #C = "ccoheal ieu w qwu tcb"
-    #C = "ccoheal"
-    C = "niayhc kyryqydmakpji xfsw robr"
+    if len(sys.argv) != 2:
+        print("usage: $ "+sys.argv[0]+" 'my cipher text here'")
+        quit()
+
+    C = sys.argv[1].lower()
+    re_cipher = re.compile("[A-Za-z ]*")
+    if not re_cipher.match(C):
+        print("cipher must only contain letters and spaces")
+        quit()
+
+    cipher = sys.argv[1]
     key_len = 0
     max_key_len = 6
     key = None
