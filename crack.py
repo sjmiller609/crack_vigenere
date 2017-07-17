@@ -74,16 +74,6 @@ def decrypt(K,C,offset):
         M[i] = (C[i]-K[(i+offset)%kl])%26
     return M
 
-def increment_key(key):
-    if len(key) == 0: return None
-    key[-1] += 1
-    if key[-1] > 25:
-        bits = increment_key(key[:-1])
-        if not bits: return None
-        return bits + [0]
-    else:
-        return key
-
 def get_offsets(words):
     offsets = []
     counter = 0
@@ -137,9 +127,20 @@ def crack_cipher(key_len,cipher):
         key = increment_key(key)
     print("\r")
 
+class Key():
+    def __init__(self,length):
+        self._key = [0]*length
+
+    #lexographic increment
+    def increment(self):
+        index = len(self._key) - 1
+        key[index] += 1
+        while(key[index] > 25):
+            key[index] = 0
+            index -= 1
+            self._key[index] += 1
 
 C = "ccoheal ieu w qwu tcb"
-#C = "ccoheal"
 key_len = 8
 key = crack_cipher(key_len,C)
 print("------")
