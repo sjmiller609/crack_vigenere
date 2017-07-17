@@ -16,7 +16,7 @@ class Vigenere_Message():
         return Vigenere_Cipher(C)
 
     def string(self):
-        return "".join([alphabet_r[num] for num in self.int_array])
+        return "".join([Vigenere_Message.alphabet_r[num] for num in self.int_array])
 
 class Vigenere_Cipher():
 
@@ -30,14 +30,14 @@ class Vigenere_Cipher():
         self.offset = offset
         self.length = len(array)
 
-    def decrypt(self,K,offset=self.offset):
+    def decrypt(self,K):
         M = list(self.int_array)
         for i in range(0,self.length):
-            M[i] = (self.int_array[i]-K.int_array[(i+offset)%K.length])%26
+            M[i] = (self.int_array[i]-K.int_array[(i+self.offset)%K.length])%26
         return Vigenere_Message(M)
 
     def string(self):
-        return "".join([alphabet_r[num] for num in self.int_array])
+        return "".join([Vigenere_Cipher.alphabet_r[num] for num in self.int_array])
 
 
 class Vigenere_Key():
@@ -54,7 +54,7 @@ class Vigenere_Key():
     #lexographic increment, with "around the block" overflow implemented
     def increment(self):
         index = self.length - 1
-        key[index] += 1
+        self.int_array[index] += 1
         while(self.int_array[index] > 25):
             self.int_array[index] = 0
             index -= 1
@@ -64,6 +64,6 @@ class Vigenere_Key():
             self.int_array[index] += 1
 
     def string(self):
-        return "".join([alphabet_r[num] for num in self.int_array])
+        return "".join([Vigenere_Key.alphabet_r[num] for num in self.int_array])
 
 

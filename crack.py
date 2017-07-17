@@ -1,7 +1,7 @@
 import enchant
 import sys
 import requests
-from cryptolib.crypto import Vigenere_Key
+from cryptolib.crypto import Vigenere_Key, Vigenere_Cipher, Vigenere_Message
 
 alphabet = {\
         "a":0,
@@ -31,6 +31,11 @@ alphabet = {\
         "y":24,
         "z":25}
 
+def string_to_array(string):
+    result = []
+    for char in string:
+        result.append(alphabet[char])
+    return result
 
 def get_offsets(words):
     offsets = []
@@ -58,55 +63,77 @@ def get_ciphers_shortest_word_first(cipher):
     c_words = cipher.split()
     c_words = [string_to_array(word) for word in c_words]
     offsets = get_offsets(c_words)
+    word_off_pairs = {}
     for i in range(0,len(c_words)):
         word_off_pairs[offsets[i]] = c_words[i]
     word_off_pairs = sort_by_len(word_off_pairs)
     ciphers = []
     for i in range(0,len(c_words)):
-        ciphers.append(Vigenere_Cipher(word_off_pairs[i][1],word_off_pairs[i][0])
-        #HERE
+        ciphers.append(Vigenere_Cipher(word_off_pairs[i][1],word_off_pairs[i][0]))
     return ciphers
 
-d = enchant.Dict("en_US")
-def crack_cipher(key_len,cipher):
-    key = Vigenere_Key(key_len)
+def get_ciphers(cipher):
+    c_words = cipher.split()
+    c_words = [string_to_array(word) for word in c_words]
+    offsets = get_offsets(c_words)
+    word_off_pairs = []
+    for i in range(0,len(c_words)):
+        word_off_pairs.append([offsets[i],c_words[i]])
+    ciphers = []
+    for i in range(0,len(c_words)):
+        ciphers.append(Vigenere_Cipher(word_off_pairs[i][1],word_off_pairs[i][0]))
+    return ciphers
+
+english_dict = enchant.Dict("en_US")
+def crack_cipher(key_len,cipher,key=None):
+
+    #it's a performance improvement to check the smallest word first, because it's the fastest to decrypt.
+    # and we can more quickly eliminate keys that don't decrypt the small cipher words into real english words
     cipher_words = get_ciphers_shortest_word_first(cipher)
-    print(word_off_pairs)
-    print("")
+
+    #if we are not starting from an existing key, instantiate a new key object
+    if not key:
+        key = Vigenere_Key(key_len)
+
     while not key.overflowed:
         all_are_words = True
-        for i in range(0,len(word_off_pairs)):
-            word = word_off_pairs[i][1]
-            offset = word_off_pairs[i][0]
-            index = 0
-            result = key.decrypt(word,offset=offset)
-            message = key.string()
-            message = array_to_string(result)
-            if not d.check(message):
+        for i in range(0,len(cipher_words)):
+            #decrypt and see if it's a word or not
+            if not english_dict.check(cipher_words[i].decrypt(key).string()):
                 all_are_words = False
                 break
         if all_are_words:
-            print("")
             return key
-        key = increment_key(key)
-    print("\r")
+        key.increment()
 
+    #if the key overflows, then we have checked the entire key space.
+    return None
 
+def main():
+    #C = "ccoheal ieu w qwu tcb"
+    #C = "ccoheal"
+    C = "niayhc kyryqydmakpji xfsw robr"
+    key_len = 0
+    max_key_len = 6
+    key = None
+    while not key and key_len <= max_key_len:
+        key_len += 1
+        print("cracking key space with |K| = "+str(key_len))
+        key = crack_cipher(key_len,C)
 
-C = "ccoheal ieu w qwu tcb"
-key_len = 8
-key = crack_cipher(key_len,C)
-print("------")
-print(key)
-print(array_to_string(key))
-if not key: quit()
-c_words = C.split()
-c_words = [string_to_array(word) for word in c_words]
-offsets = get_offsets(c_words)
-message = ""
-for i in range(0,len(c_words)):
-    temp = key.decrypt(c_words[i],offsets[i])
-    message += array_to_string(temp)+" "
-message = message.strip()
-print("key: "+array_to_string(key))
-print("message: "+message)
+    if key_len > max_key_len:
+        print("key space exhausted. failed to crack cipher with max key length as "+str(max_key_len))
+        quit()
+
+    print("------")
+    print("key: "+key.string())
+    c_words = get_ciphers(C)
+    message = ""
+    for i in range(0,len(c_words)):
+        message += c_words[i].decrypt(key).string()+" "
+    message = message.strip()
+
+    print("message: "+message)
+
+if __name__ == "__main__":
+    main()
