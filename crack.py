@@ -1,34 +1,7 @@
 import enchant
 import sys
 import requests
-
-alphabet_r = {\
-        0:"a",
-        1:"b",
-        2:"c",
-        3:"d",
-        4:"e",
-        5:"f",
-        6:"g",
-        7:"h",
-        8:"i",
-        9:"j",
-        10:"k",
-        11:"l",
-        12:"m",
-        13:"n",
-        14:"o",
-        15:"p",
-        16:"q",
-        17:"r",
-        18:"s",
-        19:"t",
-        20:"u",
-        21:"v",
-        22:"w",
-        23:"x",
-        24:"y",
-        25:"z"}
+from cryptolib.crypto import Vigenere_Key
 
 alphabet = {\
         "a":0,
@@ -58,14 +31,6 @@ alphabet = {\
         "y":24,
         "z":25}
 
-def string_to_array(string):
-    result = []
-    for char in string:
-        result.append(alphabet[char])
-    return result
-
-def array_to_string(array):
-    return "".join([alphabet_r[num] for num in array])
 
 def get_offsets(words):
     offsets = []
@@ -89,17 +54,23 @@ def sort_by_len(pairs):
     pairs.pop(shortest)
     return temp+sort_by_len(pairs)
 
+def get_ciphers_shortest_word_first(cipher):
+    c_words = cipher.split()
+    c_words = [string_to_array(word) for word in c_words]
+    offsets = get_offsets(c_words)
+    for i in range(0,len(c_words)):
+        word_off_pairs[offsets[i]] = c_words[i]
+    word_off_pairs = sort_by_len(word_off_pairs)
+    ciphers = []
+    for i in range(0,len(c_words)):
+        ciphers.append(Vigenere_Cipher(word_off_pairs[i][1],word_off_pairs[i][0])
+        #HERE
+    return ciphers
 
 d = enchant.Dict("en_US")
 def crack_cipher(key_len,cipher):
     key = Vigenere_Key(key_len)
-    c_words = cipher.split()
-    c_words = [string_to_array(word) for word in c_words]
-    offsets = get_offsets(c_words)
-    word_off_pairs = {}
-    for i in range(0,len(c_words)):
-        word_off_pairs[offsets[i]] = c_words[i]
-    word_off_pairs = sort_by_len(word_off_pairs)
+    cipher_words = get_ciphers_shortest_word_first(cipher)
     print(word_off_pairs)
     print("")
     while not key.overflowed:
@@ -109,6 +80,7 @@ def crack_cipher(key_len,cipher):
             offset = word_off_pairs[i][0]
             index = 0
             result = key.decrypt(word,offset=offset)
+            message = key.string()
             message = array_to_string(result)
             if not d.check(message):
                 all_are_words = False
@@ -118,42 +90,6 @@ def crack_cipher(key_len,cipher):
             return key
         key = increment_key(key)
     print("\r")
-
-class Vigenere_Key():
-    #TODO: this class could be adjusted to work for arbitrary alphabet size. but for now, let's hardcode 26 (a-z)
-    def __init__(self,length):
-        self.length = length
-        self._key = [0]*length
-        self.overflowed = 0
-
-    #lexographic increment
-    def increment(self):
-        index = self.length - 1
-        key[index] += 1
-        while(self._key[index] > 25):
-            self._key[index] = 0
-            index -= 1
-            if index < 0:
-                index = self.length - 1
-                self.overflowed += 1
-            self._key[index] += 1
-
-    def decrypt(self,C,offset=0):
-        kl = len(self._key)
-        M = list(C)
-        for i in range(0,len(C)):
-            M[i] = (C[i]-K[(i+offset)%kl])%26
-        return M
-
-    def encrypt(self,M,offset=0):
-        kl = len(self._key)
-        C = list(M)
-        for i in range(0,len(M)):
-            C[i] = (M[i]+K[(i+offset)%kl])%26
-        return C
-
-    def string(self):
-        return "".join([alphabet_r[num] for num in self._key])
 
 
 
